@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8"/>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.bundle.min.js"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.0.0-alpha/Chart.js"></script>
+
+<div>
+    <canvas id="canvas"></canvas>
+</div>
+
+<script>
+    const fetchJson = url => fetch(url).then(response => response.ok ? response.json() : {});
+
+    const colors = [
+        "rgba(255, 165, 0, 1)",
+        "rgba(255, 0, 0, 1)",
+        "rgba(0, 165, 165, 1)",
+        "rgba(0, 0, 165, 1)",
+        "rgba(255, 165, 0, 1)",
+        "rgba(255, 165, 0, 1)",
+        "rgba(255, 165, 0, 1)",
+    ];
+
+    const prepareData = data => {
+        data = data[0];
+        const dates = [...new Set(data.flatMap(item => item.data).filter(i => i.cases !== null).map(i => i.date))].sort();
+
+        console.log(dates);
+
+        let datasets = [];
+        data.forEach((country, index) => {
+            let dataset = {};
+            dataset.label = country.country;
+            dataset.data = [];
+
+            let days = country.data.flatMap(data => data.date).sort();
+            let sorted = [];
+            country.data.forEach(item => sorted[item.date] = item);
+
+            dates.forEach((date, i) => {
+                if (days.includes(date)) {
+                    dataset.data[i] = sorted[date].cases;
+                }
+            });
+            console.log(dataset.data);
+
+            dataset.borderColor = colors[index];
+            dataset.backgroundColor = "transparent";
+
+            datasets.push(dataset);
+        });
+
+        // data.map(console.log);
+        console.log(datasets);
+
+        return {
+            labels: dates,
+            datasets
+        };
+    };
+
+    let chart;
+
+    const displayCountryChart = data => {
+        let canvas = document.getElementById("canvas");
+        chart = new Chart(canvas, {
+            type: 'line',
+            data,
+            // data: {
+            //     // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+            //     labels: data.labels,
+            //     datasets: [{
+            //         label: 'Pro',
+            //         data: [7, 8, 10, 5, 3, 3],
+            //         borderColor: "rgba(0, 192, 0, 0.2)",
+            //         backgroundColor: "transparent"
+            //     },
+            //     {
+            //         label: 'Con',
+            //         data: [2, 4, 7, 3, 10, 9],
+            //         borderColor: "rgba(255, 0, 0, 0.2)",
+            //         backgroundColor: "transparent"
+            //     }]
+            // },
+            options: {
+                scales: {
+                    y: {
+                        ticks: {
+                            beginAtZero: true,
+
+                            // callback: (value, index, values) => {console.log(values); return value;}
+                        },
+                        type: "logarithmic",
+                    }
+                },
+                tooltips: {
+                    callbacks: {
+                        label: (tooltipItem, data) => {
+                            console.log(tooltipItem);
+                            console.log(data);
+                            return 'hello';
+                        }
+                    }
+                }
+            }
+        });
+        console.log(Chart.Scale);
+    };
+
+    Promise.all(["./data.json"].map(fetchJson))
+        .then(prepareData)
+        .then(displayCountryChart);
+        // .then(console.log);
+    // displayChart();
+
+    setTimeout(() => {
+        console.log(chart.options.scales.y.type);
+        chart.options.scales.y.type = 'linear';
+    }, 5000);
+
+</script>
+</html>
+
