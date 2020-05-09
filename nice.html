@@ -32,6 +32,7 @@
 <div>
     <canvas id="canvas"></canvas>
     <canvas id="canvas2"></canvas>
+    <canvas id="canvas3"></canvas>
 </div>
 <script>
     const movingAverageStep = 7;
@@ -59,12 +60,13 @@
         date: 'Date',
         intakeCumulative: 'Total (cumulative) number of COVID-19 patients requiring ICU admission',
         newIntake: 'Number of new ICU admissions of COVID-19 patients',
-        newIntakeZkh: 'Number of new hospital admissions of COVID-19 patients',
+        newIntakeZkh: 'Number of new hospital (non-ICU) admissions of COVID-19 patients',
         newIntakeSuspected: 'Number of new ICU admissions with COVID-19 suspection',
         movingAverageNewIntake: movingAverageStep + ' day moving average of new ICU admissions',
+        movingAverageNewIntakeZkh: movingAverageStep + ' day moving average of new hospital admissions',
 
         intakeCount: 'Total number of COVID-19 patients in ICU',
-        intakeCountZkh: 'Total number of COVID-19 patients in hospital',
+        intakeCountZkh: 'Total number of COVID-19 patients in hospital (non-ICU)',
 
         intakeDelta: 'Changes of number of COVID-19 patients in ICU',
         died: 'Total (cumulative) of COVID-19 patients who passed away in hospital, during or after ICU admission',
@@ -79,6 +81,7 @@
     const hideTableColumns = [
         'newIntakeZkh',
         'intakeCountZkh',
+        'movingAverageNewIntakeZkh'
     ];
 
     const mergeData = fetchedData => {
@@ -155,11 +158,14 @@
             if (i >= movingAverageStep - 1) {
                 let newIntakes = 0;
                 let intakeDelta = 0;
+                let newIntakesZkh = 0;
                 for (j = i - movingAverageStep + 1; j <= i; j++) {
                     newIntakes += sortedData[j].newIntake.value;
+                    newIntakesZkh += sortedData[j].newIntakeZkh;
                     intakeDelta += sortedData[j].intakeDelta.value;
                 }
                 item.movingAverageNewIntake = (newIntakes / movingAverageStep).toFixed(2);
+                item.movingAverageNewIntakeZkh = (newIntakesZkh / movingAverageStep).toFixed(2);
                 item.movingAverageIntakeDelta = (intakeDelta / movingAverageStep).toFixed(2);
             }
 
@@ -200,17 +206,17 @@
         const datasets = [];
 
         datasets.push(
+            // {
+            //     fill: false,
+            //     borderColor: '#a0a',
+            //     label: descriptions.intakeCumulative,
+            //     data: data
+            //         // .filter(item => item.intakeCumulative > 0)
+            //         .map(item => {return {x: item.date, y: item.intakeCumulative}}),
+            // },
             {
                 fill: false,
-                borderColor: '#f0f',
-                label: descriptions.intakeCumulative,
-                data: data
-                    // .filter(item => item.intakeCumulative > 0)
-                    .map(item => {return {x: item.date, y: item.intakeCumulative}}),
-            },
-            {
-                fill: false,
-                borderColor: '#00f',
+                borderColor: '#f00',
                 label: descriptions.intakeCount,
                 data: data
                     // .filter(item => item.intakeCount > 0)
@@ -294,7 +300,7 @@
         return data;
     };
 
-    const showIntakeChart = data => {
+    const showTotalsChart = data => {
         const datasets = [];
 
         datasets.push(
@@ -378,6 +384,108 @@
         return data;
     };
 
+    const showIntakeChart = data => {
+        const datasets = [];
+
+        datasets.push(
+            {
+                type: 'bar',
+                backgroundColor: 'rgba(0, 0, 255, .25)',
+                label: descriptions.newIntakeZkh,
+                data: data
+                    // .filter(item => item.newIntake.value > 0)
+                    .map(item => {return {x: item.date, y: item.newIntakeZkh}}),
+            },
+            {
+                type: 'bar',
+                backgroundColor: 'rgba(255, 0, 0, .25)',
+                label: descriptions.newIntake,
+                data: data
+                    // .filter(item => item.newIntake.value > 0)
+                    .map(item => {return {x: item.date, y: item.newIntake.value}}),
+                // yAxisID: 'y2'
+            },
+            {
+                fill: false,
+                borderColor: '#00f',
+                label: descriptions.movingAverageNewIntakeZkh,
+                data: data
+                    .map(item => {return {x: item.date, y: item.movingAverageNewIntakeZkh}}),
+            },
+            {
+                // type: 'bar',
+                fill: false,
+                borderColor: '#f00',
+                // backgroundColor: 'rgba(255, 128, 0, .5)',
+                label: descriptions.movingAverageNewIntake,
+                data: data
+                    .map(item => {return {x: item.date, y: item.movingAverageNewIntake}}),
+                // yAxisID: 'y2'
+            },
+        );
+
+        console.log(datasets);
+
+        let canvas = document.getElementById("canvas3");
+        let chart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                datasets
+            },
+            options: {
+                title: {
+                    display: true,
+                    fontSize: 24,
+                    text: 'COVID-19 Hospital/ICU new intakes in NL'
+                },
+                scales: {
+                    x: {
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Data source: https://www.stichting-nice.nl/',
+                        },
+                        type: 'time',
+                        display: true,
+                        ticks: {
+                            major: {
+                                enabled: true
+                            }
+                        }
+                    },
+                    y: {
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Totals',
+                        },
+                        ticks: {
+                            beginAtZero: true,
+
+                            // callback: (value, index, values) => {console.log(values); return value;}
+                        },
+                        // type: "logarithmic",
+                        // min: 1,
+                    },
+                    // y2: {
+                    //     scaleLabel: {
+                    //         display: true,
+                    //         labelString: 'New admissions (average)',
+                    //     },
+                    //     position: 'right',
+                    //     ticks: {
+                    //         beginAtZero: true,
+                    //
+                    //         // callback: (value, index, values) => {console.log(values); return value;}
+                    //     },
+                        // suggestedMax: 1600,
+                        // type: "logarithmic",
+                    // }
+                },
+            }
+        });
+
+        return data;
+    };
+
     const localSource = (source) => './' + source + '.json';
     const remoteSource = (source) => 'https://www.stichting-nice.nl/covid-19/public/' + source + '/';
 
@@ -389,6 +497,7 @@
         .then(enrichData)
         .then(showTable)
         .then(showICUChart)
+        .then(showTotalsChart)
         .then(showIntakeChart)
         .then(console.log)
 
