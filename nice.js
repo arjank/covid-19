@@ -189,7 +189,7 @@ const showICUChart = data => {
         },
         {
             type: 'bar',
-            backgroundColor: 'rgba(255, 128, 0, .5)',
+            backgroundColor: 'rgba(255, 128, 0, .3)',
             label: descriptions.newIntake,
             data: data
                 // .filter(item => item.newIntake.value > 0)
@@ -225,6 +225,10 @@ const showICUChart = data => {
             },
             scales: {
                 x: {
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Data source: https://www.stichting-nice.nl/',
+                    },
                     type: 'time',
                     display: true,
                     ticks: {
