@@ -1,4 +1,5 @@
-
+Array.prototype.take = function(n) { return this.slice(0, n) };
+Array.prototype.drop = function(n) { return this.slice(n) };
 
 const movingAverageStep = 7;
 const sources = [
@@ -10,6 +11,8 @@ const sources = [
 
     // 'ic-cumulative',
     'died-and-survivors-cumulative',
+    'behandelduur-distribution',
+    'zkh/behandelduur-distribution',
 ];
 
 const indexes = {
@@ -18,14 +21,15 @@ const indexes = {
     'zkh/intake-count': 'intakeCountZkh',
     'new-intake': ['newIntakeConfirmed', 'newIntakeSuspected'],
     'zkh/new-intake': ['newIntakeConfirmedZkh', 'newIntakeSuspectedZkh'],
-    'died-and-survivors-cumulative': ['died', 'survived', 'fromIC']
+    'died-and-survivors-cumulative': ['died', 'survived', 'fromIC'],
+    'behandelduur-distribution': ['hospitalizedNotIcuDay', 'stillInIcuDay', 'survivedIcuDay', 'diedIcuDay'],
+    'zkh/behandelduur-distribution': ['stillInHospitalDay', 'survivedHospitalDay', 'diedHospitalDay'],
 };
 
 const descriptions = {
     date: 'Date',
     intakeCumulative: 'Total (cumulative) number of COVID-19 patients requiring ICU admission',
     newIntake: 'Number of new ICU admissions of COVID-19 patients',
-    newIntakeZkh: 'Number of new hospital (non-ICU) admissions of COVID-19 patients',
     newIntakeSuspected: 'Number of new ICU admissions with COVID-19 suspection',
     movingAverageNewIntake: movingAverageStep + ' day moving average of new ICU admissions',
     movingAverageNewIntakeZkh: movingAverageStep + ' day moving average of new hospital admissions',
@@ -34,17 +38,20 @@ const descriptions = {
     intakeCountZkh: 'Total number of COVID-19 patients in hospital (non-ICU)',
 
     intakeDelta: 'Changes of number of COVID-19 patients in ICU',
-    died: 'Total (cumulative) of COVID-19 patients who passed away in hospital, during or after ICU admission',
-    diedDelta: 'Number of COVID-19 patients who died in hospital during or after ICU admission',
-    fromIC: 'Total (cumulative) of COVID-19 patients that have left the ICU alive but are still hospitalized',
-    fromICDelta: 'Number of COVID-19 patients that have left the ICU alive but are still hospitalized',
+    stillInIcuDay: 'Patients still in ICU per admission date',
+    // died: 'Total (cumulative) of COVID-19 patients who passed away in hospital, during or after ICU admission',
+    // diedDelta: 'Number of COVID-19 patients who died in hospital during or after ICU admission',
+    // fromIC: 'Total (cumulative) of COVID-19 patients that have left the ICU alive but are still hospitalized',
+    // fromICDelta: 'Number of COVID-19 patients that have left the ICU alive but are still hospitalized',
     // survived: 'Total (cumulative)  of COVID-19 patients that have left the hospital alive after ICU admission',
     // survivedDelta: 'Number of COVID-19 patients that have left the hospital alive after ICU admission',
     // movingAverageIntakeDelta: movingAverageStep + ' day moving average of patients in ICU',
+    newIntakeZkh: 'Number of new hospital (non-ICU) admissions of COVID-19 patients',
+    stillInHospitalDay: 'Non-ICU Patients still in hospital per admission date',
 };
 
 const hideTableColumns = [
-    'newIntakeZkh',
+    // 'newIntakeZkh',
     'intakeCountZkh',
     'movingAverageNewIntakeZkh'
 ];
@@ -57,6 +64,12 @@ const mergeData = fetchedData => {
         if (Array.isArray(indexes[sourceKey])) {
             indexes[sourceKey].forEach((key, id) => {
                 dataset[id].forEach(item => {
+                    if (item.date === undefined) {
+                        let daysAgo = item[0] - 1;
+                        item.date = moment().subtract(daysAgo, 'days').format('Y-MM-DD');
+                        item.value = item[1];
+                    }
+
                     let date = item.date;
                     if (! result[date]) {
                         result[date] = {};
@@ -118,6 +131,12 @@ const enrichData = sortedData => {
             item.survivedDelta = item.survived - sortedData[i - 1].survived;
             item.fromICDelta = item.fromIC - sortedData[i - 1].fromIC;
         }
+        if (item.stillInIcuDay !== undefined) {
+            item.stillInIcuDay = {value: item.stillInIcuDay, decreasing: item.stillInIcuDay === 0};
+        }
+        if (item.stillInHospitalDay !== undefined) {
+            item.stillInHospitalDay = {value: item.stillInHospitalDay, decreasing: item.stillInHospitalDay === 0};
+        }
         item.movingAverageNewIntake = '';
         item.movingAverageIntakeDelta = '';
         if (i >= movingAverageStep - 1) {
@@ -153,6 +172,10 @@ const showTable = data => {
     data.forEach(item => {
         const tr = tbody.appendChild(document.createElement('tr'));
         keys.forEach(key => {
+            if (item[key] === undefined) {
+                tr.appendChild(document.createElement('td'));
+                return;
+            }
             let value = item[key].value === undefined ? item[key] : item[key].value;
             if (key === 'date') {
                 value = value.format('ddd, DD MMM');
