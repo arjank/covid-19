@@ -32,7 +32,6 @@ const descriptions = {
     newIntake: 'Number of new ICU admissions of COVID-19 patients',
     newIntakeSuspected: 'Number of new ICU admissions with COVID-19 suspection',
     movingAverageNewIntake: movingAverageStep + ' day moving average of new ICU admissions',
-    movingAverageNewIntakeZkh: movingAverageStep + ' day moving average of new hospital admissions',
 
     intakeCount: 'Total number of COVID-19 patients in ICU',
     intakeCountZkh: 'Total number of COVID-19 patients in hospital (non-ICU)',
@@ -47,13 +46,15 @@ const descriptions = {
     // survivedDelta: 'Number of COVID-19 patients that have left the hospital alive after ICU admission',
     // movingAverageIntakeDelta: movingAverageStep + ' day moving average of patients in ICU',
     newIntakeZkh: 'Number of new hospital (non-ICU) admissions of COVID-19 patients',
+    newIntakeSuspectedZkh: 'Number of new hospital (non-ICU) admissions with COVID-19 suspection',
+    movingAverageNewIntakeZkh: movingAverageStep + ' day moving average of new hospital admissions',
     stillInHospitalDay: 'Non-ICU Patients still in hospital per admission date',
 };
 
 const hideTableColumns = [
     // 'newIntakeZkh',
     'intakeCountZkh',
-    'movingAverageNewIntakeZkh'
+    // 'movingAverageNewIntakeZkh'
 ];
 
 const mergeData = fetchedData => {
